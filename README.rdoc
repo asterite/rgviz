@@ -27,7 +27,7 @@ Read the source code for the AST nodes, it's not very big and the nodes just map
 
 If you pass :extensions => true to the parse method these new scalar functions will be available:
 
- * concat: converts each of its arguments to a string and then concatenates them. For example: concat(1, '-', '2') returns '1-2'. Can also receive just a single argument to convert it to a string.
+* concat: converts each of its arguments to a string and then concatenates them. For example: concat(1, '-', '2') returns '1-2'. Can also receive just a single argument to convert it to a string.
 
 So to have this function parsed you need to do:
 
