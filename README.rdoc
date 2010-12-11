@@ -8,6 +8,10 @@ It can generate an AST of the query from a string. The AST nodes implement the {
 
   gem install rgviz
 
+=== Ruby on Rails
+
+There is a separate project on top of this library called {rgviz-rails}[https://github.com/asterite/rgviz-rails], check it out!
+
 === Usage
 
 First you must require the library:
