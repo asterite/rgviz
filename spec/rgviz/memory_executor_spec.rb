@@ -104,4 +104,8 @@ describe MemoryExecutor do
   it_processes_single_select_column 'min(age)', 'c0', :number, 1, 'min(age)' do
     [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
   end
+
+  it_processes_single_select_column 'age where age > 2', 'age', :number, 3, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
 end
