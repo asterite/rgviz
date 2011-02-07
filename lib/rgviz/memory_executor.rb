@@ -4,6 +4,12 @@ module Rgviz
       @query = query
       @rows = rows
       @types = types
+      @types_to_indices = {}
+      i = 0
+      @types.each do |k, v|
+        @types_to_indices[k.to_s] = i
+        i += 1
+      end
       @labels = {}
     end
 
@@ -36,23 +42,46 @@ module Rgviz
     end
 
     def generate_rows
+      ag = []
+      rows_length = @rows.length
+      row_i = 0
       @rows.each do |row|
-        @table.rows << generate_row(row)
+        r = generate_row row, row_i, rows_length, ag
+        @table.rows << r if r
+        row_i += 1
+      end
+      ag.each do |a|
+        r = Row.new
+        r.c << Cell.new(:v => a)
+        @table.rows << r
       end
     end
 
-    def generate_row(row)
+    def generate_row(row, row_i, rows_length, ag)
       r = Row.new
+      found_ag = false
       if @query.select && @query.select.columns && @query.select.columns.length > 0
+        i = 0
         @query.select.columns.each do |col|
-          r.c << Cell.new(:v => eval_column(row, col))
+          v = eval_column col, row, row_i, rows_length, ag[i]
+          if col.class == AggregateColumn
+            ag[i] = v
+            found_ag = true
+          else
+            r.c << Cell.new(:v => v)
+          end
+          i += 1
         end
       else
         row.each do |v|
           r.c << Cell.new(:v => v)
         end
       end
-      r
+      if found_ag
+        nil
+      else
+        r
+      end
     end
 
     def column_id(col, i)
@@ -103,8 +132,8 @@ module Rgviz
       @labels[string] || string
     end
 
-    def eval_column(row, col)
-      visitor = EvalVisitor.new(@types, row)
+    def eval_column(col, row, row_i, rows_length, ag)
+      visitor = EvalVisitor.new @types_to_indices, row, row_i, rows_length, ag
       col.accept visitor
       visitor.value
     end
@@ -112,26 +141,90 @@ module Rgviz
     class EvalVisitor < Visitor
       attr_reader :value
 
-      def initialize(types, row)
-        @types = types
+      def initialize(types_to_indices, row, row_i, rows_length, ag)
+        @types_to_indices = types_to_indices
         @row = row
+        @row_i = row_i
+        @rows_length = rows_length
+        @row_i = row_i
+        @rows_length = rows_length
+        @ag = ag
       end
 
       def visit_id_column(col)
-        i = 0
-        @types.each do |k, v|
-          if k.to_s == col.name
-            @value = @row[i]
-            return
-          end
-          i += 1
-        end
-        raise "Unknown column #{col}"
+        i = @types_to_indices[col.name]
+        raise "Unknown column #{col}" unless i
+        @value = @row[i]
       end
 
       def visit_number_column(col)
         @value = col.value
       end
+
+      def visit_string_column(col)
+        @value = col.value
+      end
+
+      def visit_boolean_column(col)
+        @value = col.value
+      end
+
+      def visit_date_column(col)
+        @value = col.value.to_s
+      end
+
+      def visit_date_time_column(node)
+        @value = node.value.strftime("%Y-%m-%d %H:%M:%S")
+      end
+
+      def visit_time_of_day_column(node)
+        @value = node.value.strftime("%H:%M:%S")
+      end
+
+      def visit_scalar_function_column(node)
+        case node.function
+        when ScalarFunctionColumn::Sum
+          node.arguments[0].accept self; val1 = @value
+          node.arguments[1].accept self; val2 = @value
+          @value = val1 + val2
+        when ScalarFunctionColumn::Difference
+          node.arguments[0].accept self; val1 = @value
+          node.arguments[1].accept self; val2 = @value
+          @value = val1 - val2
+        when ScalarFunctionColumn::Product
+          node.arguments[0].accept self; val1 = @value
+          node.arguments[1].accept self; val2 = @value
+          @value = val1 * val2
+        when ScalarFunctionColumn::Quotient
+          node.arguments[0].accept self; val1 = @value
+          node.arguments[1].accept self; val2 = @value
+          @value = val1 / val2
+        else
+        end
+        false
+      end
+
+      def visit_aggregate_column(col)
+        case col.function
+        when AggregateColumn::Sum
+          col.argument.accept self
+          @value += @ag || 0
+        when AggregateColumn::Avg
+          col.argument.accept self
+          @value += @ag || 0
+          @value = @value / @rows_length.to_f if @row_i == @rows_length - 1
+        when AggregateColumn::Count
+          @value = (@ag || 0) + 1
+        when AggregateColumn::Max
+          col.argument.accept self
+          @value = @ag if @ag && @ag > @value
+        when AggregateColumn::Min
+          col.argument.accept self
+          @value = @ag if @ag && @ag < @value
+        end
+        false
+      end
     end
+
   end
 end
