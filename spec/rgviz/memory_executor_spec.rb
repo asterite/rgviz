@@ -70,4 +70,5 @@ describe MemoryExecutor do
   end
 
   it_processes_single_select_column '1', 'c0', :number, 1, '1'
+  it_processes_single_select_column '1.2', 'c0', :number, 1.2, '1.2'
 end
