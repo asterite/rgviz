@@ -10,7 +10,7 @@ module Rgviz
     attr_accessor :labels
     attr_accessor :formats
     attr_accessor :options
-    
+
     def accept(visitor)
       if visitor.visit_query self
         select.accept visitor if select
@@ -23,7 +23,7 @@ module Rgviz
       end
       visitor.end_visit_query self
     end
-    
+
     def to_s
       str = ''
       if select
@@ -48,11 +48,11 @@ module Rgviz
 
   class ColumnsContainer
     attr_accessor :columns
-    
+
     def initialize
       @columns = []
     end
-    
+
     def to_s
       @columns.map(&:to_s).join(', ')
     end
@@ -87,18 +87,18 @@ module Rgviz
 
   class OrderBy
     attr_accessor :sorts
-    
+
     def initialize
       @sorts = []
     end
-    
+
     def accept(visitor)
       if visitor.visit_order_by(self)
         sorts.each{|x| x.accept visitor}
       end
       visitor.end_visit_order_by self
     end
-    
+
     def to_s
       @sorts.map(&:to_s).join(', ')
     end
@@ -111,19 +111,19 @@ module Rgviz
 
     attr_accessor :column
     attr_accessor :order
-    
+
     def initialize(column, order)
       @column = column
       @order = order
     end
-    
+
     def accept(visitor)
       if visitor.visit_sort(self)
         column.accept visitor
       end
       visitor.end_visit_sort self
     end
-    
+
     def to_s
       "#{column} #{order}"
     end
@@ -131,18 +131,18 @@ module Rgviz
 
   class Where
     attr_accessor :expression
-    
+
     def initialize(expression)
       @expression = expression
     end
-    
+
     def accept(visitor)
       if visitor.visit_where(self)
         expression.accept visitor
       end
       visitor.end_visit_where self
     end
-    
+
     def to_s
       @expression.to_s
     end
@@ -151,50 +151,50 @@ module Rgviz
   class Label
     attr_accessor :column
     attr_accessor :label
-    
+
     def initialize(column, label)
       @column = column
       @label = label
     end
-    
+
     def accept(visitor)
       if visitor.visit_label(self)
         column.accept visitor
       end
       visitor.end_visit_label self
     end
-    
+
     def to_s
-      "#{column} `#{label}`" 
+      "#{column} `#{label}`"
     end
   end
-  
+
   class Format
     attr_accessor :column
     attr_accessor :pattern
-    
+
     def initialize(column, pattern)
       @column = column
       @pattern = pattern
     end
-    
+
     def accept(visitor)
       if visitor.visit_format(self)
         column.accept visitor
       end
       visitor.end_visit_format self
     end
-    
+
     def to_s
-      "#{column} `#{pattern}`" 
+      "#{column} `#{pattern}`"
     end
   end
 
   class Options
-    
+
     attr_accessor :no_values
     attr_accessor :no_format
-    
+
     def to_s
       s = ''
       s += 'no_values ' if @no_values
@@ -203,30 +203,30 @@ module Rgviz
     end
 
   end
-  
+
   class LogicalExpression
     And = Token::And
     Or = Token::Or
-    
+
     attr_accessor :operator
     attr_accessor :operands
-    
+
     def initialize(operator, operands)
       @operator = operator
       @operands = operands
     end
-    
+
     def accept(visitor)
       if visitor.visit_logical_expression(self)
         operands.each{|x| x.accept visitor}
       end
       visitor.end_visit_logical_expression self
     end
-    
+
     def to_s
       operands.map(&:to_s).join(" #{operator} ")
     end
-  
+
   end
 
   class BinaryExpression
@@ -240,19 +240,19 @@ module Rgviz
     Lte = Token::LTE
     Matches = Token::Matches
     Neq = Token::NEQ
-    
+
     StartsWith = :'starts with'
 
     attr_accessor :operator
     attr_accessor :left
     attr_accessor :right
-    
+
     def initialize(left, operator, right)
       @left = left
       @operator = operator
       @right = right
     end
-    
+
     def accept(visitor)
       if visitor.visit_binary_expression(self)
         left.accept visitor
@@ -260,7 +260,7 @@ module Rgviz
       end
       visitor.end_visit_binary_expression self
     end
-    
+
     def to_s
       "#{left} #{operator} #{right}"
     end
@@ -270,22 +270,22 @@ module Rgviz
     Not = Token::Not
     IsNull = :'is null'
     IsNotNull = :'is not null'
-    
+
     attr_accessor :operand
     attr_accessor :operator
-    
+
     def initialize(operator, operand)
       @operator = operator
       @operand = operand
     end
-    
+
     def accept(visitor)
       if visitor.visit_unary_expression(self)
         operand.accept visitor
       end
       visitor.end_visit_unary_expression self
     end
-    
+
     def to_s
       if operator == Not
         "not #{operand}"
@@ -297,16 +297,16 @@ module Rgviz
 
   class IdColumn
     attr_accessor :name
-    
+
     def initialize(name)
       @name = name
     end
-    
+
     def accept(visitor)
       visitor.visit_id_column(self)
       visitor.end_visit_id_column self
     end
-    
+
     def to_s
       @name
     end
@@ -314,11 +314,11 @@ module Rgviz
 
   class ValueColumn
     attr_accessor :value
-    
+
     def initialize(value)
       @value = value
     end
-    
+
     def to_s
       value.to_s
     end
@@ -336,7 +336,7 @@ module Rgviz
       visitor.visit_string_column(self)
       visitor.end_visit_string_column self
     end
-    
+
     def to_s
       "'#{value}'"
     end
@@ -354,7 +354,7 @@ module Rgviz
       visitor.visit_date_column(self)
       visitor.end_visit_date_column self
     end
-    
+
     def to_s
       "date '#{value.to_s}'"
     end
@@ -365,7 +365,7 @@ module Rgviz
       visitor.visit_date_time_column(self)
       visitor.end_visit_date_time_column self
     end
-    
+
     def to_s
       "datetime '" + value.strftime("%Y-%m-%d %H:%M:%S") + "'"
     end
@@ -376,7 +376,7 @@ module Rgviz
       visitor.visit_time_of_day_column(self)
       visitor.end_visit_time_of_day_column self
     end
-    
+
     def to_s
       "timeofday '" + value.strftime("%H:%M:%S") + "'"
     end
@@ -406,19 +406,19 @@ module Rgviz
 
     attr_accessor :function
     attr_accessor :arguments
-    
+
     def initialize(function, *arguments)
       @function = function
       @arguments = arguments
     end
-    
+
     def accept(visitor)
       if visitor.visit_scalar_function_column(self)
         arguments.each{|x| x.accept visitor}
       end
       visitor.end_visit_scalar_function_column self
     end
-    
+
     def to_s
       case function
       when Sum, Difference, Product, Quotient
@@ -439,12 +439,12 @@ module Rgviz
 
     attr_accessor :function
     attr_accessor :argument
-    
+
     def initialize(function, argument)
       @function = function
       @argument = argument
     end
-    
+
     def accept(visitor)
       if visitor.visit_aggregate_column(self)
         argument.accept visitor

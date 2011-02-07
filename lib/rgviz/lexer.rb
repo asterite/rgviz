@@ -7,14 +7,14 @@ module Rgviz
       @token = Token.new
       @extensions = options[:extensions]
     end
-    
+
     def next_token
       @token.start = pos
       @token.string = nil
       @token.value = nil
-      
+
       skip /\s*/
-      
+
       if eos?
         @token.value = Token::EOF
       elsif scan /"([^"]*)"/
@@ -31,10 +31,10 @@ module Rgviz
         @token.number = matched.to_f
       elsif scan /\d+/
         @token.value = Token::INTEGER
-        @token.number = matched.to_f
+        @token.number = matched.to_i
       else
         @token.value = if scan /\+/ then Token::PLUS
-          elsif scan /\-/ then Token::MINUS 
+          elsif scan /\-/ then Token::MINUS
           elsif scan /\*/ then Token::STAR
           elsif scan /\// then Token::SLASH
           elsif scan /\,/ then Token::COMMA
@@ -43,7 +43,7 @@ module Rgviz
           elsif scan /\=/ then Token::EQ
           elsif scan /\!\=/ or scan /\<\>/ then Token::NEQ
           elsif scan /\>\=/ then Token::GTE
-          elsif scan /\>/ then Token::GT          
+          elsif scan /\>/ then Token::GT
           elsif scan /\<\=/ then Token::LTE
           elsif scan /\</ then Token::LT
           elsif scan /and\b/i then Token::And
@@ -55,9 +55,9 @@ module Rgviz
           elsif scan /count\b/i then Token::Count
           elsif scan /date\b/i then Token::Date
           elsif scan /datediff\b/i then Token::DateDiff
-          elsif scan /datetime\b/i then Token::DateTime        
+          elsif scan /datetime\b/i then Token::DateTime
           elsif scan /day\b/i then Token::Day
-          elsif scan /dayofweek\b/i then Token::DayOfWeek        
+          elsif scan /dayofweek\b/i then Token::DayOfWeek
           elsif scan /desc\b/i then Token::Desc
           elsif scan /ends\b/i then Token::Ends
           elsif scan /false\b/i then Token::False
@@ -100,14 +100,14 @@ module Rgviz
           elsif scan /year\b/i then Token::Year
           elsif scan /[a-zA-Z_]\w*\b/ then Token::ID
         end
-        
+
         if @token.value
           @token.string = matched
         else
           raise ParseException.new("Unexpected character #{string[pos].chr}")
         end
       end
-      
+
       return @token
     end
   end
