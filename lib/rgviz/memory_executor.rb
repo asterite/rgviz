@@ -18,6 +18,7 @@ module Rgviz
       @table = Table.new
 
       generate_columns
+      filter_rows
       generate_rows
 
       @table
@@ -38,6 +39,17 @@ module Rgviz
         @types.each do |k, v|
           @table.cols << Column.new(:id => k, :type => v, :label => k)
         end
+      end
+    end
+
+    def filter_rows
+      return unless @query.where
+
+
+      @rows = @rows.select do |row|
+        visitor = EvalWhereVisitor.new @types_to_indices, row
+        @query.where.accept visitor
+        visitor.true
       end
     end
 
@@ -63,7 +75,7 @@ module Rgviz
       if @query.select && @query.select.columns && @query.select.columns.length > 0
         i = 0
         @query.select.columns.each do |col|
-          v = eval_column col, row, row_i, rows_length, ag[i]
+          v = eval_select col, row, row_i, rows_length, ag[i]
           if col.class == AggregateColumn
             ag[i] = v
             found_ag = true
@@ -132,13 +144,13 @@ module Rgviz
       @labels[string] || string
     end
 
-    def eval_column(col, row, row_i, rows_length, ag)
-      visitor = EvalVisitor.new @types_to_indices, row, row_i, rows_length, ag
+    def eval_select(col, row, row_i, rows_length, ag)
+      visitor = EvalSelectVisitor.new @types_to_indices, row, row_i, rows_length, ag
       col.accept visitor
       visitor.value
     end
 
-    class EvalVisitor < Visitor
+    class EvalSelectVisitor < Visitor
       attr_reader :value
 
       def initialize(types_to_indices, row, row_i, rows_length, ag)
@@ -223,6 +235,49 @@ module Rgviz
           @value = @ag if @ag && @ag < @value
         end
         false
+      end
+    end
+
+    class EvalWhereVisitor < EvalSelectVisitor
+      attr_reader :true
+
+      def initialize(types_to_indices, row)
+        @row = row
+        @types_to_indices = types_to_indices
+        @true = true
+      end
+
+      def visit_binary_expression(node)
+        node.left.accept self; left = @value
+        node.right.accept self; right = @value
+        case node.operator
+        when BinaryExpression::Gt
+          @true = left > right
+        when BinaryExpression::Gte
+          @true = left >= right
+        when BinaryExpression::Lt
+          @true = left < right
+        when BinaryExpression::Lte
+          @true = left <= right
+        when BinaryExpression::Eq
+          @true = left == right
+        when BinaryExpression::Neq
+          @true = left != right
+        when BinaryExpression::Contains
+          @true = !!left[right]
+        when BinaryExpression::StartsWith
+          @true = left.start_with? right
+        when BinaryExpression::EndsWith
+          @true = left.end_with? right
+        when BinaryExpression::Like
+          right.gsub!('%', '.*')
+          right.gsub!('_', '.')
+          right = Regexp.new right
+          @true = !!(left =~ right)
+        when BinaryExpression::Matches
+          right = Regexp.new "^#{right}$"
+          @true = !!(left =~ right)
+        end
       end
     end
 

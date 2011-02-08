@@ -108,4 +108,40 @@ describe MemoryExecutor do
   it_processes_single_select_column 'age where age > 2', 'age', :number, 3, 'age' do
     [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
   end
+
+  it_processes_single_select_column 'age where age >= 3', 'age', :number, 3, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where age < 2', 'age', :number, 1, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where age <= 1', 'age', :number, 1, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where age = 2', 'age', :number, 2, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where age != 1', 'age', :number, 2, 'age' do
+    [1, 2].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column "name where name contains 'foo'", 'name', :string, 'one foo two', 'name' do
+    [[1, 'one foo two', 20, Date.today], [1, 'one bar two', 20, Date.today]]
+  end
+
+  it_processes_single_select_column "name where name starts with 'foo'", 'name', :string, 'foo one two', 'name' do
+    [[1, 'foo one two', 20, Date.today], [1, 'bar one two', 20, Date.today]]
+  end
+
+  it_processes_single_select_column "name where name ends with 'foo'", 'name', :string, 'one two foo', 'name' do
+    [[1, 'one two foo', 20, Date.today], [1, 'one two bar', 20, Date.today]]
+  end
+
+  it_processes_single_select_column "name where name matches 'one two .*'", 'name', :string, 'one two foo baz', 'name' do
+    [[1, 'one two foo baz', 20, Date.today], [1, 'bar one two', 20, Date.today]]
+  end
 end
