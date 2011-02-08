@@ -64,7 +64,7 @@ module Rgviz
       end
       ag.each do |a|
         r = Row.new
-        r.c << Cell.new(:v => a)
+        r.c << Cell.new(:v => format_value(a))
         @table.rows << r
       end
     end
@@ -80,7 +80,7 @@ module Rgviz
             ag[i] = v
             found_ag = true
           else
-            r.c << Cell.new(:v => v)
+            r.c << Cell.new(:v => format_value(v))
           end
           i += 1
         end
@@ -93,6 +93,19 @@ module Rgviz
         nil
       else
         r
+      end
+    end
+
+    def format_value(v)
+      case v
+      when FalseClass, TrueClass, Integer, Float
+        v
+      when Date
+        v.strftime "%Y-%m-%d"
+      when Time
+        v.strftime "%Y-%m-%d %H:%M:%S"
+      else
+        v.to_s
       end
     end
 
@@ -182,11 +195,11 @@ module Rgviz
       end
 
       def visit_date_column(col)
-        @value = col.value.to_s
+        @value = col.value
       end
 
       def visit_date_time_column(node)
-        @value = node.value.strftime("%Y-%m-%d %H:%M:%S")
+        @value = node.value
       end
 
       def visit_time_of_day_column(node)
@@ -194,24 +207,27 @@ module Rgviz
       end
 
       def visit_scalar_function_column(node)
+        node.arguments[0].accept self; val1 = @value
+        if node.arguments.length == 2
+          node.arguments[1].accept self; val2 = @value
+        end
         case node.function
         when ScalarFunctionColumn::Sum
-          node.arguments[0].accept self; val1 = @value
-          node.arguments[1].accept self; val2 = @value
           @value = val1 + val2
         when ScalarFunctionColumn::Difference
-          node.arguments[0].accept self; val1 = @value
-          node.arguments[1].accept self; val2 = @value
           @value = val1 - val2
         when ScalarFunctionColumn::Product
-          node.arguments[0].accept self; val1 = @value
-          node.arguments[1].accept self; val2 = @value
           @value = val1 * val2
         when ScalarFunctionColumn::Quotient
-          node.arguments[0].accept self; val1 = @value
-          node.arguments[1].accept self; val2 = @value
           @value = val1 / val2
-        else
+        when ScalarFunctionColumn::Concat
+          @value = "#{val1}#{val2}"
+        when ScalarFunctionColumn::DateDiff
+          @value = (val1 - val2).to_i
+        when ScalarFunctionColumn::Day
+          @value = val1.day
+        when ScalarFunctionColumn::DayOfWeek
+          @value = val1.wday
         end
         false
       end
@@ -287,9 +303,15 @@ module Rgviz
         end
         case node.operator
         when LogicalExpression::And
-          @value = values.all?
+          node.operands.each do |op|
+            op.accept self
+            break unless @value
+          end
         when LogicalExpression::Or
-          @value = values.any?
+          node.operands.each do |op|
+            op.accept self
+            break if @value
+          end
         end
         false
       end

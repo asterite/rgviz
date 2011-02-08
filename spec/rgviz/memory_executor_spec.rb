@@ -6,17 +6,17 @@ describe MemoryExecutor do
 
   Types = [[:id, :number], [:name, :string], [:age, :number], [:birthday, :date]]
 
-  def exec(query, rows)
+  def exec(query, rows, options = {})
     exec = MemoryExecutor.new query, rows, Types
-    exec.execute
+    exec.execute options
   end
 
   def format_datetime(date)
-    date.strftime "%y-%m-%d %h:%m:%s"
+    date.strftime "%Y-%m-%d %H:%M:%S"
   end
 
   def format_date(date)
-    date.strftime "%y-%m-%d"
+    date.strftime "%Y-%m-%d"
   end
 
   def self.it_processes_single_select_column(query, id, type, value, label, options = {})
@@ -27,7 +27,7 @@ describe MemoryExecutor do
         rows = [[1, 'Foo', 20, Date.today]]
       end
 
-      table = exec "select #{query}", rows
+      table = exec "select #{query}", rows, options
       table.cols.length.should == 1
 
       table.cols[0].id.should == id
@@ -84,6 +84,9 @@ describe MemoryExecutor do
   it_processes_single_select_column '3 * age', 'c0', :number, 60, '3 * age' do
     [[1, 'Foo', 20, Date.today]]
   end
+  it_processes_single_select_column "concat('foo', 'bar')", 'c0', :string, 'foobar', "concat('foo', 'bar')", :extensions => true
+  it_processes_single_select_column "datediff(date '2010-10-12', date '2010-10-01')", 'c0', :number, 11, "dateDiff(date '2010-10-12', date '2010-10-01')"
+  it_processes_single_select_column "dayofweek(date '2010-10-12')", 'c0', :number, 2, "dayOfWeek(date '2010-10-12')"
 
   it_processes_single_select_column 'sum(age)', 'c0', :number, 6, 'sum(age)' do
     [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}

@@ -383,7 +383,6 @@ module Rgviz
   end
 
   class ScalarFunctionColumn
-
     Concat = Token::Concat
     DateDiff = Token::DateDiff
     Day = Token::Day
