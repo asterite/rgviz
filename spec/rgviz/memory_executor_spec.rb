@@ -144,4 +144,26 @@ describe MemoryExecutor do
   it_processes_single_select_column "name where name matches 'one two .*'", 'name', :string, 'one two foo baz', 'name' do
     [[1, 'one two foo baz', 20, Date.today], [1, 'bar one two', 20, Date.today]]
   end
+
+  it_processes_single_select_column 'age where age > 2 and age <= 3', 'age', :number, 3, 'age' do
+    [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where age <= 1 or age < 1', 'age', :number, 1, 'age' do
+    [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age where not age <= 2', 'age', :number, 3, 'age' do
+    [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'id where age is null', 'id', :number, 3, 'id' do
+    j = 0
+    [1, 2, nil].map{|i| j += 1; [j, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'id where age is not null', 'id', :number, 2, 'id' do
+    j = 0
+    [nil, 2, nil].map{|i| j += 1; [j, 'Foo', i, Date.today]}
+  end
 end

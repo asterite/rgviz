@@ -49,7 +49,7 @@ module Rgviz
       @rows = @rows.select do |row|
         visitor = EvalWhereVisitor.new @types_to_indices, row
         @query.where.accept visitor
-        visitor.true
+        visitor.value
       end
     end
 
@@ -239,12 +239,10 @@ module Rgviz
     end
 
     class EvalWhereVisitor < EvalSelectVisitor
-      attr_reader :true
-
       def initialize(types_to_indices, row)
         @row = row
         @types_to_indices = types_to_indices
-        @true = true
+        @value = true
       end
 
       def visit_binary_expression(node)
@@ -252,34 +250,62 @@ module Rgviz
         node.right.accept self; right = @value
         case node.operator
         when BinaryExpression::Gt
-          @true = left > right
+          @value = left > right
         when BinaryExpression::Gte
-          @true = left >= right
+          @value = left >= right
         when BinaryExpression::Lt
-          @true = left < right
+          @value = left < right
         when BinaryExpression::Lte
-          @true = left <= right
+          @value = left <= right
         when BinaryExpression::Eq
-          @true = left == right
+          @value = left == right
         when BinaryExpression::Neq
-          @true = left != right
+          @value = left != right
         when BinaryExpression::Contains
-          @true = !!left[right]
+          @value = !!left[right]
         when BinaryExpression::StartsWith
-          @true = left.start_with? right
+          @value = left.start_with? right
         when BinaryExpression::EndsWith
-          @true = left.end_with? right
+          @value = left.end_with? right
         when BinaryExpression::Like
           right.gsub!('%', '.*')
           right.gsub!('_', '.')
           right = Regexp.new right
-          @true = !!(left =~ right)
+          @value = !!(left =~ right)
         when BinaryExpression::Matches
           right = Regexp.new "^#{right}$"
-          @true = !!(left =~ right)
+          @value = !!(left =~ right)
         end
+        false
+      end
+
+      def visit_logical_expression(node)
+        values = []
+        node.operands.each do |op|
+          op.accept self
+          values << @value
+        end
+        case node.operator
+        when LogicalExpression::And
+          @value = values.all?
+        when LogicalExpression::Or
+          @value = values.any?
+        end
+        false
+      end
+
+      def visit_unary_expression(node)
+        node.operand.accept self
+        case node.operator
+        when UnaryExpression::Not
+          @value = !@value
+        when UnaryExpression::IsNull
+          @value = @value.nil?
+        when UnaryExpression::IsNotNull
+          @value = !@value.nil?
+        end
+        false
       end
     end
-
   end
 end
