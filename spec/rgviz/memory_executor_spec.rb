@@ -86,8 +86,13 @@ describe MemoryExecutor do
   end
   it_processes_single_select_column "concat('foo', 'bar')", 'c0', :string, 'foobar', "concat('foo', 'bar')", :extensions => true
   it_processes_single_select_column "datediff(date '2010-10-12', date '2010-10-01')", 'c0', :number, 11, "dateDiff(date '2010-10-12', date '2010-10-01')"
+  it_processes_single_select_column "year(datetime '2010-01-02 10:11:12')", 'c0', :number, 2010, "year(datetime '2010-01-02 10:11:12')"
+  it_processes_single_select_column "month(datetime '2010-01-02 10:11:12')", 'c0', :number, 1, "month(datetime '2010-01-02 10:11:12')"
+  it_processes_single_select_column "day(datetime '2010-01-02 10:11:12')", 'c0', :number, 2, "day(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "dayofweek(date '2010-10-12')", 'c0', :number, 2, "dayOfWeek(date '2010-10-12')"
-  it_processes_single_select_column "hour(datetime '2010-01-02 10:11:12')", 'c0', :number, 10, "datetime '2010-01-02 10:11:12'"
+  it_processes_single_select_column "hour(datetime '2010-01-02 10:11:12')", 'c0', :number, 10, "hour(datetime '2010-01-02 10:11:12')"
+  it_processes_single_select_column "minute(datetime '2010-01-02 10:11:12')", 'c0', :number, 11, "minute(datetime '2010-01-02 10:11:12')"
+  it_processes_single_select_column "second(datetime '2010-01-02 10:11:12')", 'c0', :number, 12, "second(datetime '2010-01-02 10:11:12')"
 
 
   it_processes_single_select_column 'sum(age)', 'c0', :number, 6, 'sum(age)' do

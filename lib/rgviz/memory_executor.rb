@@ -224,10 +224,22 @@ module Rgviz
           @value = "#{val1}#{val2}"
         when ScalarFunctionColumn::DateDiff
           @value = (val1 - val2).to_i
+        when ScalarFunctionColumn::Year
+          @value = val1.year
+        when ScalarFunctionColumn::Month
+          @value = val1.month
         when ScalarFunctionColumn::Day
           @value = val1.day
         when ScalarFunctionColumn::DayOfWeek
           @value = val1.wday
+        when ScalarFunctionColumn::Hour
+          @value = val1.hour
+        when ScalarFunctionColumn::Minute
+          @value = val1.min
+        when ScalarFunctionColumn::Second
+          @value = val1.sec
+        when ScalarFunctionColumn::Millisecond
+          raise "Millisecond is not implemented"
         end
         false
       end
