@@ -207,7 +207,9 @@ module Rgviz
       end
 
       def visit_scalar_function_column(node)
-        node.arguments[0].accept self; val1 = @value
+        if node.arguments.length >= 1
+          node.arguments[0].accept self; val1 = @value
+        end
         if node.arguments.length == 2
           node.arguments[1].accept self; val2 = @value
         end
@@ -238,8 +240,28 @@ module Rgviz
           @value = val1.min
         when ScalarFunctionColumn::Second
           @value = val1.sec
+        when ScalarFunctionColumn::Quarter
+          @value = (val1.month / 3.0).ceil
         when ScalarFunctionColumn::Millisecond
           raise "Millisecond is not implemented"
+        when ScalarFunctionColumn::Lower
+          @value = val1.downcase
+        when ScalarFunctionColumn::Upper
+          @value = val1.upcase
+        when ScalarFunctionColumn::Now
+          @value = Time.now
+        when ScalarFunctionColumn::ToDate
+          case @value
+          when Date
+            @value = @value
+          when Time
+            @value = Date.civil @value.year, @value.month, @value.day
+          when Integer
+            seconds = @value / 1000
+            millis = @value % 1000
+            @value = Time.at seconds, millis
+            @value = Date.civil @value.year, @value.month, @value.day
+          end
         end
         false
       end

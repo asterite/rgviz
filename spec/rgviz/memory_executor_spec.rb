@@ -93,7 +93,12 @@ describe MemoryExecutor do
   it_processes_single_select_column "hour(datetime '2010-01-02 10:11:12')", 'c0', :number, 10, "hour(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "minute(datetime '2010-01-02 10:11:12')", 'c0', :number, 11, "minute(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "second(datetime '2010-01-02 10:11:12')", 'c0', :number, 12, "second(datetime '2010-01-02 10:11:12')"
-
+  it_processes_single_select_column "quarter(datetime '2010-04-02 10:11:12')", 'c0', :number, 2, "quarter(datetime '2010-04-02 10:11:12')"
+  it_processes_single_select_column "lower('FOO')", 'c0', :string, 'foo', "lower('FOO')"
+  it_processes_single_select_column "upper('foo')", 'c0', :string, 'FOO', "upper('foo')"
+  it_processes_single_select_column "toDate(date '2010-10-12')", 'c0', :date, '2010-10-12', "toDate(date '2010-10-12')"
+  it_processes_single_select_column "toDate(datetime '2010-10-12 10:11:12')", 'c0', :date, '2010-10-12', "toDate(datetime '2010-10-12 10:11:12')"
+  it_processes_single_select_column "toDate(1234567890000)", 'c0', :date, '2009-02-13', "toDate(1234567890000)"
 
   it_processes_single_select_column 'sum(age)', 'c0', :number, 6, 'sum(age)' do
     [1, 2, 3].map{|i| [1, 'Foo', i, Date.today]}
