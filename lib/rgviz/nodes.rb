@@ -11,6 +11,10 @@ module Rgviz
     attr_accessor :formats
     attr_accessor :options
 
+    def select?
+      @select && @select.columns && @select.columns.length > 0
+    end
+
     def accept(visitor)
       if visitor.visit_query self
         select.accept visitor if select

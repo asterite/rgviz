@@ -270,6 +270,21 @@ describe MemoryExecutor do
     table.rows[1].c[0].v.should == 2
   end
 
+  it "processes group by with where" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'two', 4, Date.today],
+    ]
+
+    table = exec "select max(age) where name != 'one' group by name order by name desc", rows
+
+    table.rows.length.should == 1
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 4
+  end
+
   it "processes group by with scalar" do
     rows = [
       [1, 'one', 1, Date.today],
@@ -287,6 +302,44 @@ describe MemoryExecutor do
     table.rows[1].c[0].v.should == 4
   end
 
+  it "processes group by selecting group column" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'two', 4, Date.today],
+    ]
+
+    table = exec 'select name, max(age) group by name order by name', rows
+
+    table.rows.length.should == 2
+    table.rows[0].c.length.should == 2
+    table.rows[0].c[0].v.should == 'one'
+    table.rows[0].c[1].v.should == 2
+    table.rows[1].c.length.should == 2
+    table.rows[1].c[0].v.should == 'two'
+    table.rows[1].c[1].v.should == 4
+  end
+
+  it "processes group by selecting scalar over group column" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'two', 4, Date.today],
+    ]
+
+    table = exec 'select upper(name), max(age) group by name order by name', rows
+
+    table.rows.length.should == 2
+    table.rows[0].c.length.should == 2
+    table.rows[0].c[0].v.should == 'ONE'
+    table.rows[0].c[1].v.should == 2
+    table.rows[1].c.length.should == 2
+    table.rows[1].c[0].v.should == 'TWO'
+    table.rows[1].c[1].v.should == 4
+  end
+
   it_processes_single_select_column 'age where age > 3 order by age limit 1', 'age', :number, 4, 'age' do
     [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
   end
@@ -296,4 +349,42 @@ describe MemoryExecutor do
   end
 
   it_processes_single_select_column "1 + 2 label 1 + 2 'my name'", 'c0', :number, 3, "my name"
+
+  it "processes pivot" do
+    rows = [
+      [1, 'Eng', 1000, Date.parse('2000-01-12')],
+      [2, 'Eng', 500, Date.parse('2000-01-12')],
+      [3, 'Eng', 600, Date.parse('2000-01-13')],
+      [4, 'Sales', 400, Date.parse('2000-01-12')],
+      [5, 'Sales', 350, Date.parse('2000-01-12')],
+      [6, 'Marketing', 800, Date.parse('2000-01-13')]
+    ]
+
+    table = exec 'select name, sum(age) group by name pivot birthday order by name', rows
+
+    table.cols.length.should == 3
+
+    i = 0
+    [['c0', :string, 'name'],
+     ['c1', :number, '2000-01-12 sum(age)'],
+     ['c2', :number, '2000-01-13 sum(age)']].each do |id, type, label|
+      table.cols[i].id.should == id
+      table.cols[i].type.should == type
+      table.cols[i].label.should == label
+      i += 1
+    end
+
+    table.rows.length.should == 3
+
+    i = 0
+    [['Eng', 1500, 600],
+     ['Marketing', nil, 800],
+     ['Sales', 750, nil]].each do |values|
+      table.rows[i].c.length.should == 3
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
 end

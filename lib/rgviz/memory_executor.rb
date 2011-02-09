@@ -19,10 +19,16 @@ module Rgviz
 
       process_labels
 
-      generate_columns
       check_has_aggregation
-      filter_rows
-      group_rows
+
+      generate_columns
+
+      if @has_aggregation
+        filter_and_group_rows
+      else
+        filter_rows
+      end
+
       sort_rows
       limit_rows
       generate_rows
@@ -40,8 +46,12 @@ module Rgviz
       end
     end
 
+    def check_has_aggregation
+      @has_aggregation = @query.group_by || (@query.select? && @query.select.columns.any?{|x| x.class == AggregateColumn})
+    end
+
     def generate_columns
-      if @query.select && @query.select.columns && @query.select.columns.length > 0
+      if @query.select?
         # Select the specified columns
         i = 0
         @query.select.columns.each do |col|
@@ -56,39 +66,41 @@ module Rgviz
       end
     end
 
-    def check_has_aggregation
-      @has_aggregation = @query.group_by || (@query.select && @query.select.columns && @query.select.columns.any?{|x| x.class == AggregateColumn})
-    end
-
     def filter_rows
       return unless @query.where
 
-      @rows = @rows.select do |row|
-        visitor = EvalWhereVisitor.new @types_to_indices, row
-        @query.where.accept visitor
-        visitor.value
-      end
+      @rows = @rows.reject{|row| row_is_filtered? row}
     end
 
-    def group_rows
+    def row_is_filtered?(row)
+      visitor = EvalWhereVisitor.new @types_to_indices, row
+      @query.where.accept visitor
+      !visitor.value
+    end
+
+    def filter_and_group_rows
       if not @query.group_by
-        if @has_aggregation
-          @rows = [['', @rows]]
-        end
+        @rows = [[nil, @rows]] if @has_aggregation
         return
       end
 
       groups = Hash.new{|h, k| h[k] = []}
       @rows.each do |row|
+        next if @query.where && row_is_filtered?(row)
+
         group = []
         @query.group_by.columns.each do |col|
-          visitor = EvalGroupVisitor.new @types_to_indices, row
-          col.accept visitor
-          group << [col, visitor.value]
+          group << group_row(row, col)
         end
         groups[group] << row
       end
       @rows = groups.to_a
+    end
+
+    def group_row(row, col)
+      visitor = EvalGroupVisitor.new @types_to_indices, row
+      col.accept visitor
+      [col, visitor.value]
     end
 
     def sort_rows
@@ -142,53 +154,49 @@ module Rgviz
 
     def generate_rows
       if @has_aggregation
-        @rows.each do |grouping, rows|
-          ag = []
-          rows_length = rows.length
-          row_i = 0
-          rows.each do |row|
-            r = generate_row row, row_i, rows_length, ag
-            @table.rows << r if r
-            row_i += 1
-          end
-          ag.each do |a|
-            r = Row.new
-            r.c << Cell.new(:v => format_value(a))
-            @table.rows << r
-          end
-        end
+        generate_aggregated_rows
       else
         @rows.each do |row|
-          r = generate_row row
-          @table.rows << r
+          @table.rows << generate_row(row)
         end
       end
     end
 
-    def generate_row(row, row_i = nil, rows_length = nil, ag = nil)
-      r = Row.new
-      found_ag = false
-      if @query.select && @query.select.columns && @query.select.columns.length > 0
-        i = 0
-        @query.select.columns.each do |col|
-          v = eval_select col, row, row_i, rows_length, (ag ? ag[i] : nil)
-          if col.class == AggregateColumn
-            ag[i] = v
-            found_ag = true
-          else
-            r.c << Cell.new(:v => format_value(v))
-          end
-          i += 1
+    def generate_aggregated_rows
+      @rows.each do |grouping, rows|
+        ag = []
+        rows_length = rows.length
+        row_i = 0
+        rows.each do |row|
+          compute_row_aggregation row, row_i, rows_length, ag
+          row_i += 1
         end
-      else
-        row.each do |v|
-          r.c << Cell.new(:v => v)
-        end
+        r = Row.new
+        r.c = ag.map{|v| Cell.new :v => format_value(v)}
+        @table.rows << r
       end
-      if found_ag
-        nil
+    end
+
+    def generate_row(row)
+      r = Row.new
+      if @query.select?
+        @query.select.columns.each do |col|
+          v = eval_select col, row
+          r.c << Cell.new(:v => format_value(v))
+        end
       else
-        r
+        r.c = row.map{|v| Cell.new :v => v}
+      end
+      r
+    end
+
+    def compute_row_aggregation(row, row_i, rows_length, ag)
+      raise "Must specify a select clause if group by or pivot specified" unless @query.select?
+
+      i = 0
+      @query.select.columns.each do |col|
+        ag[i] = eval_aggregated_select col, row, row_i, rows_length, ag[i]
+        i += 1
       end
     end
 
@@ -253,7 +261,11 @@ module Rgviz
       @labels[string] || string
     end
 
-    def eval_select(col, row, row_i = nil, rows_length = nil, ag = nil)
+    def eval_select(col, row)
+      eval_aggregated_select col, row, nil, nil, nil
+    end
+
+    def eval_aggregated_select(col, row, row_i, rows_length, ag)
       visitor = EvalSelectVisitor.new @types_to_indices, row, row_i, rows_length, ag
       col.accept visitor
       visitor.value
