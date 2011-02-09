@@ -182,6 +182,60 @@ describe MemoryExecutor do
     [nil, 2, nil].map{|i| j += 1; [j, 'Foo', i, Date.today]}
   end
 
+  it "processes order by" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+    ]
+
+    table = exec 'select age order by age', rows
+
+    table.rows.length.should == 3
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 1
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 2
+    table.rows[2].c.length.should == 1
+    table.rows[2].c[0].v.should == 3
+  end
+
+  it "processes order by desc" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+    ]
+
+    table = exec 'select age order by age desc', rows
+
+    table.rows.length.should == 3
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 3
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 2
+    table.rows[2].c.length.should == 1
+    table.rows[2].c[0].v.should == 1
+  end
+
+  it "processes order by many columns" do
+    rows = [
+      [2, 'one', 1, Date.today],
+      [1, 'one', 1, Date.today],
+      [0, 'two', 2, Date.today],
+    ]
+
+    table = exec 'select id order by age, id', rows
+
+    table.rows.length.should == 3
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 1
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 2
+    table.rows[2].c.length.should == 1
+    table.rows[2].c[0].v.should == 0
+  end
+
   it "processes group by" do
     rows = [
       [1, 'one', 1, Date.today],
@@ -197,5 +251,22 @@ describe MemoryExecutor do
     table.rows[0].c[0].v.should == 2
     table.rows[1].c.length.should == 1
     table.rows[1].c[0].v.should == 4
+  end
+
+  it "processes group by order desc" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'two', 4, Date.today],
+    ]
+
+    table = exec 'select max(age) group by name order by name desc', rows
+
+    table.rows.length.should == 2
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 4
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 2
   end
 end

@@ -18,6 +18,7 @@ module Rgviz
       @table = Table.new
 
       generate_columns
+      check_has_aggregation
       filter_rows
       group_rows
       sort_rows
@@ -44,6 +45,10 @@ module Rgviz
       end
     end
 
+    def check_has_aggregation
+      @has_aggregation = @query.group_by || (@query.select && @query.select.columns && @query.select.columns.any?{|x| x.class == AggregateColumn})
+    end
+
     def filter_rows
       return unless @query.where
 
@@ -56,7 +61,9 @@ module Rgviz
 
     def group_rows
       if not @query.group_by
-        @rows = [['', @rows]]
+        if @has_aggregation
+          @rows = [['', @rows]]
+        end
         return
       end
 
@@ -70,14 +77,13 @@ module Rgviz
         end
         groups[group] << row
       end
-      @rows = groups
+      @rows = groups.to_a
     end
 
     def sort_rows
       return unless @query.order_by
 
-      if @rows.is_a?(Hash)
-        @rows = @rows.to_a
+      if @has_aggregation
         @rows.sort! do |row1, row2|
           group1 = row1[0]
           group2 = row2[0]
@@ -86,40 +92,66 @@ module Rgviz
             group1_sort_column = group1.select{|x| x[0] == sort.column}.first
             if group1_sort_column
               group2_sort_column = group2.select{|x| x[0] == sort.column}.first
-              @sort = group1_sort_column[1] <=> group2_sort_column[1]
+              if sort.order == Sort::Asc
+                @sort = group1_sort_column[1] <=> group2_sort_column[1]
+              else
+                @sort = group2_sort_column[1] <=> group1_sort_column[1]
+              end
+              break unless @sort == 0
             end
           end
           @sort
         end
       else
+        @rows.sort! do |row1, row2|
+          @sort = 0
+          @query.order_by.sorts.each do |sort|
+            val1 = eval_select sort.column, row1
+            val2 = eval_select sort.column, row2
+            if sort.order == Sort::Asc
+              @sort = val1 <=> val2
+            else
+              @sort = val2 <=> val1
+            end
+            break unless @sort == 0
+          end
+          @sort
+        end
       end
     end
 
     def generate_rows
-      @rows.each do |grouping, rows|
-        ag = []
-        rows_length = rows.length
-        row_i = 0
-        rows.each do |row|
-          r = generate_row row, row_i, rows_length, ag
-          @table.rows << r if r
-          row_i += 1
+      if @has_aggregation
+        @rows.each do |grouping, rows|
+          ag = []
+          rows_length = rows.length
+          row_i = 0
+          rows.each do |row|
+            r = generate_row row, row_i, rows_length, ag
+            @table.rows << r if r
+            row_i += 1
+          end
+          ag.each do |a|
+            r = Row.new
+            r.c << Cell.new(:v => format_value(a))
+            @table.rows << r
+          end
         end
-        ag.each do |a|
-          r = Row.new
-          r.c << Cell.new(:v => format_value(a))
+      else
+        @rows.each do |row|
+          r = generate_row row
           @table.rows << r
         end
       end
     end
 
-    def generate_row(row, row_i, rows_length, ag)
+    def generate_row(row, row_i = nil, rows_length = nil, ag = nil)
       r = Row.new
       found_ag = false
       if @query.select && @query.select.columns && @query.select.columns.length > 0
         i = 0
         @query.select.columns.each do |col|
-          v = eval_select col, row, row_i, rows_length, ag[i]
+          v = eval_select col, row, row_i, rows_length, (ag ? ag[i] : nil)
           if col.class == AggregateColumn
             ag[i] = v
             found_ag = true
@@ -201,7 +233,7 @@ module Rgviz
       @labels[string] || string
     end
 
-    def eval_select(col, row, row_i, rows_length, ag)
+    def eval_select(col, row, row_i = nil, rows_length = nil, ag = nil)
       visitor = EvalSelectVisitor.new @types_to_indices, row, row_i, rows_length, ag
       col.accept visitor
       visitor.value
