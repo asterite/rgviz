@@ -294,4 +294,6 @@ describe MemoryExecutor do
   it_processes_single_select_column 'age order by age limit 1 offset 2', 'age', :number, 2, 'age' do
     [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
   end
+
+  it_processes_single_select_column "1 + 2 label 1 + 2 'my name'", 'c0', :number, 3, "my name"
 end

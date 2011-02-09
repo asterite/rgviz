@@ -17,6 +17,8 @@ module Rgviz
       @query = Parser.parse(@query, options) unless @query.kind_of?(Query)
       @table = Table.new
 
+      process_labels
+
       generate_columns
       check_has_aggregation
       filter_rows
@@ -29,6 +31,14 @@ module Rgviz
     end
 
     private
+
+    def process_labels
+      return unless @query.labels
+
+      @query.labels.each do |label|
+        @labels[label.column.to_s] = label.label
+      end
+    end
 
     def generate_columns
       if @query.select && @query.select.columns && @query.select.columns.length > 0
