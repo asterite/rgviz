@@ -269,4 +269,29 @@ describe MemoryExecutor do
     table.rows[1].c.length.should == 1
     table.rows[1].c[0].v.should == 2
   end
+
+  it "processes group by with scalar" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'ONE', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'TWO', 4, Date.today],
+    ]
+
+    table = exec 'select max(age) group by lower(name) order by lower(name)', rows
+
+    table.rows.length.should == 2
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 2
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 4
+  end
+
+  it_processes_single_select_column 'age where age > 3 order by age limit 1', 'age', :number, 4, 'age' do
+    [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
+  end
+
+  it_processes_single_select_column 'age order by age limit 1 offset 2', 'age', :number, 2, 'age' do
+    [1, 2, 3, 4, 5].map{|i| [1, 'Foo', i, Date.today]}
+  end
 end

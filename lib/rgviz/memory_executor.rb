@@ -22,6 +22,7 @@ module Rgviz
       filter_rows
       group_rows
       sort_rows
+      limit_rows
       generate_rows
 
       @table
@@ -85,19 +86,21 @@ module Rgviz
 
       if @has_aggregation
         @rows.sort! do |row1, row2|
-          group1 = row1[0]
-          group2 = row2[0]
+          g1 = row1[0]
+          g2 = row2[0]
           @sort = 0
           @query.order_by.sorts.each do |sort|
-            group1_sort_column = group1.select{|x| x[0] == sort.column}.first
-            if group1_sort_column
-              group2_sort_column = group2.select{|x| x[0] == sort.column}.first
+            g1sc = g1.select{|x| x[0] == sort.column}.first
+            if g1sc
+              g2sc = g2.select{|x| x[0] == sort.column}.first
               if sort.order == Sort::Asc
-                @sort = group1_sort_column[1] <=> group2_sort_column[1]
+                @sort = g1sc[1] <=> g2sc[1]
               else
-                @sort = group2_sort_column[1] <=> group1_sort_column[1]
+                @sort = g2sc[1] <=> g1sc[1]
               end
               break unless @sort == 0
+            else
+              raise "Order by column not found: #{sort.column}"
             end
           end
           @sort
@@ -118,6 +121,13 @@ module Rgviz
           @sort
         end
       end
+    end
+
+    def limit_rows
+      return unless @query.limit
+
+      offset = (@query.offset ? (@query.offset - 1) : 0)
+      @rows = @rows[offset ... offset + @query.limit]
     end
 
     def generate_rows
