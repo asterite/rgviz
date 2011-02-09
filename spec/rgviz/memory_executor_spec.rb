@@ -181,4 +181,21 @@ describe MemoryExecutor do
     j = 0
     [nil, 2, nil].map{|i| j += 1; [j, 'Foo', i, Date.today]}
   end
+
+  it "processes group by" do
+    rows = [
+      [1, 'one', 1, Date.today],
+      [1, 'one', 2, Date.today],
+      [1, 'two', 3, Date.today],
+      [1, 'two', 4, Date.today],
+    ]
+
+    table = exec 'select max(age) group by name order by name', rows
+
+    table.rows.length.should == 2
+    table.rows[0].c.length.should == 1
+    table.rows[0].c[0].v.should == 2
+    table.rows[1].c.length.should == 1
+    table.rows[1].c[0].v.should == 4
+  end
 end

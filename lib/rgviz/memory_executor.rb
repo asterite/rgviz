@@ -19,6 +19,8 @@ module Rgviz
 
       generate_columns
       filter_rows
+      group_rows
+      sort_rows
       generate_rows
 
       @table
@@ -45,7 +47,6 @@ module Rgviz
     def filter_rows
       return unless @query.where
 
-
       @rows = @rows.select do |row|
         visitor = EvalWhereVisitor.new @types_to_indices, row
         @query.where.accept visitor
@@ -53,19 +54,62 @@ module Rgviz
       end
     end
 
-    def generate_rows
-      ag = []
-      rows_length = @rows.length
-      row_i = 0
-      @rows.each do |row|
-        r = generate_row row, row_i, rows_length, ag
-        @table.rows << r if r
-        row_i += 1
+    def group_rows
+      if not @query.group_by
+        @rows = [['', @rows]]
+        return
       end
-      ag.each do |a|
-        r = Row.new
-        r.c << Cell.new(:v => format_value(a))
-        @table.rows << r
+
+      groups = Hash.new{|h, k| h[k] = []}
+      @rows.each do |row|
+        group = []
+        @query.group_by.columns.each do |col|
+          visitor = EvalGroupVisitor.new @types_to_indices, row
+          col.accept visitor
+          group << [col, visitor.value]
+        end
+        groups[group] << row
+      end
+      @rows = groups
+    end
+
+    def sort_rows
+      return unless @query.order_by
+
+      if @rows.is_a?(Hash)
+        @rows = @rows.to_a
+        @rows.sort! do |row1, row2|
+          group1 = row1[0]
+          group2 = row2[0]
+          @sort = 0
+          @query.order_by.sorts.each do |sort|
+            group1_sort_column = group1.select{|x| x[0] == sort.column}.first
+            if group1_sort_column
+              group2_sort_column = group2.select{|x| x[0] == sort.column}.first
+              @sort = group1_sort_column[1] <=> group2_sort_column[1]
+            end
+          end
+          @sort
+        end
+      else
+      end
+    end
+
+    def generate_rows
+      @rows.each do |grouping, rows|
+        ag = []
+        rows_length = rows.length
+        row_i = 0
+        rows.each do |row|
+          r = generate_row row, row_i, rows_length, ag
+          @table.rows << r if r
+          row_i += 1
+        end
+        ag.each do |a|
+          r = Row.new
+          r.c << Cell.new(:v => format_value(a))
+          @table.rows << r
+        end
       end
     end
 
@@ -292,7 +336,10 @@ module Rgviz
       def initialize(types_to_indices, row)
         @row = row
         @types_to_indices = types_to_indices
-        @value = true
+      end
+
+      def visit_aggregate_column(col)
+        raise "Aggregation function #{col.function} cannot be used in where clause"
       end
 
       def visit_binary_expression(node)
@@ -361,6 +408,13 @@ module Rgviz
           @value = !@value.nil?
         end
         false
+      end
+    end
+
+    class EvalGroupVisitor < EvalSelectVisitor
+      def initialize(types_to_indices, row)
+        @row = row
+        @types_to_indices = types_to_indices
       end
     end
   end

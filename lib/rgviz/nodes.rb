@@ -307,6 +307,16 @@ module Rgviz
       visitor.end_visit_id_column self
     end
 
+    def hash
+      @name.hash
+    end
+
+    def eql?(other)
+      other.class == IdColumn && other.name == @name
+    end
+
+    alias_method :==, :eql?
+
     def to_s
       @name
     end
@@ -318,6 +328,16 @@ module Rgviz
     def initialize(value)
       @value = value
     end
+
+    def hash
+      @value.hash
+    end
+
+    def eql?(other)
+      other.class == self.class && other.value == @value
+    end
+
+    alias_method :==, :eql?
 
     def to_s
       value.to_s
@@ -383,6 +403,7 @@ module Rgviz
   end
 
   class ScalarFunctionColumn
+
     Concat = Token::Concat
     DateDiff = Token::DateDiff
     Day = Token::Day
@@ -418,6 +439,22 @@ module Rgviz
       visitor.end_visit_scalar_function_column self
     end
 
+    def hash
+      return @hash if @hash
+      @hash = 1
+      @hash = @hash * 31 + @function.hash
+      @arguments.each do |arg|
+        @hash = @hash * 31 + arg.hash
+      end
+      @hash
+    end
+
+    def eql?(other)
+      other.class == ScalarFunctionColumn && other.function == @function && other.arguments == @arguments
+    end
+
+    alias_method :==, :eql?
+
     def to_s
       case function
       when Sum, Difference, Product, Quotient
@@ -450,6 +487,22 @@ module Rgviz
       end
       visitor.end_visit_aggregate_column self
     end
+
+    def hash
+      return @hash if @hash
+      @hash = 1
+      @hash = @hash * 31 + @function.hash
+      @arguments.each do |arg|
+        @hash = @hash * 31 + arg.hash
+      end
+      @hash
+    end
+
+    def eql?(other)
+      other.class == ScalarFunctionColumn && other.function == @function && other.arguments == @arguments
+    end
+
+    alias_method :==, :eql?
 
     def to_s
       "#{function}(#{argument})"
