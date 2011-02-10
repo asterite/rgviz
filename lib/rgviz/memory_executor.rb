@@ -42,7 +42,7 @@ module Rgviz
       return unless @query.labels
 
       @query.labels.each do |label|
-        @labels[label.column.to_s] = label.label
+        @labels[label.column] = label.label
       end
     end
 
@@ -55,7 +55,7 @@ module Rgviz
         # Select the specified columns
         i = 0
         @query.select.columns.each do |col|
-          @table.cols << (Column.new :id => column_id(col, i), :type => column_type(col), :label => column_label(col.to_s))
+          @table.cols << (Column.new :id => column_id(col, i), :type => column_type(col), :label => column_label(col))
           i += 1
         end
       else
@@ -245,8 +245,8 @@ module Rgviz
       end
     end
 
-    def column_label(string)
-      @labels[string] || string
+    def column_label(col)
+      @labels[col] || col.to_s
     end
 
     def eval_select(col, row)
