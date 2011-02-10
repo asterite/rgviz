@@ -55,14 +55,12 @@ module Rgviz
         # Select the specified columns
         i = 0
         @query.select.columns.each do |col|
-          col_to_s = col.to_s
-          @table.cols << (Column.new :id => column_id(col, i), :type => column_type(col), :label => column_label(col_to_s))
+          @table.cols << (Column.new :id => column_id(col, i), :type => column_type(col), :label => column_label(col.to_s))
+          i += 1
         end
       else
         # Select all columns
-        @types.each do |k, v|
-          @table.cols << Column.new(:id => k, :type => v, :label => k)
-        end
+        @table.cols = @types.map{|k, v| Column.new :id => k, :type => v, :label => k}
       end
     end
 
@@ -88,10 +86,7 @@ module Rgviz
       @rows.each do |row|
         next if @query.where && row_is_filtered?(row)
 
-        group = []
-        @query.group_by.columns.each do |col|
-          group << group_row(row, col)
-        end
+        group = @query.group_by.columns.map{|col| group_row row, col}
         groups[group] << row
       end
       @rows = groups.to_a
@@ -107,41 +102,37 @@ module Rgviz
       return unless @query.order_by
 
       if @has_aggregation
-        @rows.sort! do |row1, row2|
-          g1 = row1[0]
-          g2 = row2[0]
-          @sort = 0
-          @query.order_by.sorts.each do |sort|
-            g1sc = g1.select{|x| x[0] == sort.column}.first
-            if g1sc
-              g2sc = g2.select{|x| x[0] == sort.column}.first
-              if sort.order == Sort::Asc
-                @sort = g1sc[1] <=> g2sc[1]
-              else
-                @sort = g2sc[1] <=> g1sc[1]
-              end
-              break unless @sort == 0
-            else
-              raise "Order by column not found: #{sort.column}"
-            end
-          end
-          @sort
-        end
+        sort_aggregated_rows
       else
         @rows.sort! do |row1, row2|
           @sort = 0
           @query.order_by.sorts.each do |sort|
             val1 = eval_select sort.column, row1
             val2 = eval_select sort.column, row2
-            if sort.order == Sort::Asc
-              @sort = val1 <=> val2
-            else
-              @sort = val2 <=> val1
-            end
+            @sort = sort.order == Sort::Asc ? val1 <=> val2 : val2 <=> val1
             break unless @sort == 0
           end
           @sort
         end
+      end
+    end
+
+    def sort_aggregated_rows
+      @rows.sort! do |row1, row2|
+        g1 = row1[0]
+        g2 = row2[0]
+        @sort = 0
+        @query.order_by.sorts.each do |sort|
+          g1sc = g1.select{|x| x[0] == sort.column}.first
+          if g1sc
+            g2sc = g2.select{|x| x[0] == sort.column}.first
+            @sort = sort.order == Sort::Asc ? g1sc[1] <=> g2sc[1] : g2sc[1] <=> g1sc[1]
+            break unless @sort == 0
+          else
+            raise "Order by column not found: #{sort.column}"
+          end
+        end
+        @sort
       end
     end
 
@@ -180,12 +171,9 @@ module Rgviz
     def generate_row(row)
       r = Row.new
       if @query.select?
-        @query.select.columns.each do |col|
-          v = eval_select col, row
-          r.c << Cell.new(:v => format_value(v))
-        end
+        r.c = @query.select.columns.map{|col| Cell.new :v => format_value(eval_select col, row)}
       else
-        r.c = row.map{|v| Cell.new :v => v}
+        r.c = row.map{|v| Cell.new :v => format_value(v)}
       end
       r
     end
@@ -226,7 +214,7 @@ module Rgviz
       case col
       when IdColumn
         i = 0
-        type = @types.select{|x| x[0].to_s == col.to_s}.first
+        type = @types.select{|x| x[0].to_s == col.name}.first
         raise "Unknown column #{col}" unless type
         type[1]
       when NumberColumn
@@ -479,6 +467,10 @@ module Rgviz
       def initialize(types_to_indices, row)
         @row = row
         @types_to_indices = types_to_indices
+      end
+
+      def visit_aggregate_column(node)
+        raise "Can't use aggregation functions in group by"
       end
     end
   end

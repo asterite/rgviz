@@ -43,6 +43,7 @@ describe MemoryExecutor do
 
   it "processes select *" do
     rows = [[1, 'Foo', 20, Date.today]]
+    expected_rows = [[1, 'Foo', 20, format_date(rows.first[3])]]
 
     table = exec 'select *', rows
     table.cols.length.should == 4
@@ -59,7 +60,7 @@ describe MemoryExecutor do
     table.rows[0].c.length.should == 4
 
     i = 0
-    rows.first.each do |val|
+    expected_rows.first.each do |val|
       table.rows[0].c[i].v.should == val
       i += 1
     end
