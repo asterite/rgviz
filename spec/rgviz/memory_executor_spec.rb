@@ -351,6 +351,42 @@ describe MemoryExecutor do
 
   it_processes_single_select_column "1 + 2 label 1 + 2 'my name'", 'c0', :number, 3, "my name"
 
+  it "processes pivot without group by" do
+    rows = [
+      [1, 'Eng', 1000, Date.parse('2000-01-12')],
+      [2, 'Eng', 500, Date.parse('2000-01-12')],
+      [3, 'Eng', 600, Date.parse('2000-01-13')],
+      [4, 'Sales', 400, Date.parse('2000-01-12')],
+      [5, 'Sales', 350, Date.parse('2000-01-12')],
+      [6, 'Marketing', 800, Date.parse('2000-01-13')]
+    ]
+
+    table = exec 'select sum(age) pivot name order by name', rows
+
+    table.cols.length.should == 3
+
+    i = 0
+    [['c0', :number, 'Eng sum(age)'],
+     ['c1', :number, 'Marketing sum(age)'],
+     ['c2', :number, 'Sales sum(age)']].each do |id, type, label|
+      table.cols[i].id.should == id
+      table.cols[i].type.should == type
+      table.cols[i].label.should == label
+      i += 1
+    end
+
+    table.rows.length.should == 1
+
+    i = 0
+    [[2100, 800, 750]].each do |values|
+      table.rows[i].c.length.should == 3
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
+
   it "processes pivot" do
     rows = [
       [1, 'Eng', 1000, Date.parse('2000-01-12')],
@@ -382,6 +418,130 @@ describe MemoryExecutor do
      ['Marketing', nil, 800],
      ['Sales', 750, nil]].each do |values|
       table.rows[i].c.length.should == 3
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
+
+  it "processes pivot2" do
+    rows = [
+      [1, 'Eng', 1000, Date.parse('2000-01-12')],
+      [2, 'Eng', 500, Date.parse('2000-01-12')],
+      [3, 'Eng', 600, Date.parse('2000-01-13')],
+      [4, 'Sales', 400, Date.parse('2000-01-12')],
+      [5, 'Sales', 350, Date.parse('2000-01-12')],
+      [6, 'Marketing', 800, Date.parse('2000-01-13')]
+    ]
+
+    table = exec 'select sum(age), name group by name pivot birthday order by name', rows
+
+    table.cols.length.should == 3
+
+    i = 0
+    [['c0', :number, '2000-01-12 sum(age)'],
+     ['c1', :number, '2000-01-13 sum(age)'],
+     ['c2', :string, 'name']].each do |id, type, label|
+      table.cols[i].id.should == id
+      table.cols[i].type.should == type
+      table.cols[i].label.should == label
+      i += 1
+    end
+
+    table.rows.length.should == 3
+
+    i = 0
+    [[1500, 600, 'Eng'],
+     [nil, 800, 'Marketing'],
+     [750, nil, 'Sales']].each do |values|
+      table.rows[i].c.length.should == 3
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
+
+  it "processes pivot3" do
+    rows = [
+      [1, 'Eng', 10, Date.parse('2000-01-12')],
+      [2, 'Eng', 10, Date.parse('2001-02-12')]
+    ]
+
+    table = exec 'select name, sum(age) group by name pivot year(birthday), month(birthday)', rows
+
+    table.cols.length.should == 3
+
+    i = 0
+    [['Eng', 10, 10]].each do |values|
+      table.rows[i].c.length.should == 3
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
+
+  it "processes pivot4" do
+    rows = [
+      [1, 'Eng', 10, Date.parse('2000-01-12')],
+      [2, 'Sales', 20, Date.parse('2001-02-12')]
+    ]
+
+    table = exec 'select birthday, month(birthday), sum(age) group by month(birthday) pivot name order by name', rows
+
+    table.cols.length.should == 5
+
+    i = 0
+    [
+      ['2000-01-12', nil, 1, 10, nil],
+      [nil, '2001-02-12', 2, nil, 20],
+    ].each do |values|
+      table.rows[i].c.length.should == 5
+      values.each_with_index do |v, j|
+        table.rows[i].c[j].v.should == v
+      end
+      i += 1
+    end
+  end
+
+  it "processes pivot with no results" do
+    rows = [
+      [1, 'Eng', 10, Date.parse('2000-01-12')],
+      [2, 'Sales', 20, Date.parse('2001-02-12')]
+    ]
+
+    table = exec 'select birthday, sum(age) where 1 = 2 group by month(birthday) pivot name order by name', rows
+
+    table.cols.length.should == 2
+
+    i = 0
+    [['birthday', :date, 'birthday'],
+     ['c1', :number, 'sum(age)']].each do |id, type, label|
+      table.cols[i].id.should == id
+      table.cols[i].type.should == type
+      table.cols[i].label.should == label
+      i += 1
+    end
+  end
+
+  it "processes pivot with group by not in select" do
+    rows = [
+      [1, 'Eng', 10, Date.parse('2000-01-12')],
+      [2, 'Sales', 20, Date.parse('2001-02-12')]
+    ]
+
+    table = exec 'select birthday, sum(age) group by month(birthday) pivot name order by name', rows
+
+    table.cols.length.should == 4
+
+    i = 0
+    [
+      ['2000-01-12', nil, 10, nil],
+      [nil, '2001-02-12', nil, 20],
+    ].each do |values|
+      table.rows[i].c.length.should == 4
       values.each_with_index do |v, j|
         table.rows[i].c[j].v.should == v
       end

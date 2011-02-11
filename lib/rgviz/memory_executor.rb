@@ -47,7 +47,7 @@ module Rgviz
     end
 
     def check_has_aggregation
-      @has_aggregation = @query.group_by || (@query.select? && @query.select.columns.any?{|x| x.class == AggregateColumn})
+      @has_aggregation = @query.group_by || @query.pivot || (@query.select? && @query.select.columns.any?{|x| x.class == AggregateColumn})
     end
 
     def generate_columns
@@ -77,16 +77,20 @@ module Rgviz
     end
 
     def filter_and_group_rows
-      if not @query.group_by
+      if !@query.group_by && !@query.pivot
         @rows = [[nil, @rows]] if @has_aggregation
         return
       end
+
+      group_columns = []
+      group_columns += @query.group_by.columns if @query.group_by
+      group_columns += @query.pivot.columns if @query.pivot
 
       groups = Hash.new{|h, k| h[k] = []}
       @rows.each do |row|
         next if @query.where && row_is_filtered?(row)
 
-        group = @query.group_by.columns.map{|col| group_row row, col}
+        group = group_columns.map{|col| group_row row, col}
         groups[group] << row
       end
       @rows = groups.to_a
@@ -103,17 +107,18 @@ module Rgviz
 
       if @has_aggregation
         sort_aggregated_rows
-      else
-        @rows.sort! do |row1, row2|
-          @sort = 0
-          @query.order_by.sorts.each do |sort|
-            val1 = eval_select sort.column, row1
-            val2 = eval_select sort.column, row2
-            @sort = sort.order == Sort::Asc ? val1 <=> val2 : val2 <=> val1
-            break unless @sort == 0
-          end
-          @sort
+        return
+      end
+
+      @rows.sort! do |row1, row2|
+        @sort = 0
+        @query.order_by.sorts.each do |sort|
+          val1 = eval_select sort.column, row1
+          val2 = eval_select sort.column, row2
+          @sort = sort.order == Sort::Asc ? val1 <=> val2 : val2 <=> val1
+          break unless @sort == 0
         end
+        @sort
       end
     end
 
@@ -144,17 +149,130 @@ module Rgviz
     end
 
     def generate_rows
-      if @has_aggregation
-        generate_aggregated_rows
-      else
-        @rows.each do |row|
-          @table.rows << generate_row(row)
+      if !@has_aggregation
+        @table.rows = @rows.map{|row| generate_row row}
+        return
+      end
+
+      rows = generate_aggregated_rows
+
+      if !@query.pivot
+        rows_to_table rows
+        return
+      end
+
+      uniq_pivots = pivot_rows rows
+      pivot_cols uniq_pivots
+    end
+
+    def pivot_rows(rows)
+      # This is grouping => pivot => [selections]
+      fin = if RUBY_VERSION.start_with?("1.8")
+        if defined? ActiveSupport::OrderedHash
+          ActiveSupport::OrderedHash.new
+        else
+          SimpleOrderedHash.new
         end
+      else
+        Hash.new
+      end
+
+      # The uniq pivot values
+      uniq_pivots = []
+
+      selection_indices = []
+
+      i = 0
+      @query.select.columns.each do |col|
+        if !@query.group_by || !@query.group_by.columns.include?(col)
+          selection_indices << i
+        end
+        i += 1
+      end
+
+      # Fill fin and uniq_pivots
+      rows.each do |group, row|
+        grouped_by = []
+        pivots = []
+
+        # The grouping key of this result
+        grouped_by = group.select{|g| @query.group_by && @query.group_by.columns.include?(g[0])}
+
+        # The pivots of this result
+        pivots = group.select{|g| @query.pivot.columns.include?(g[0])}
+
+        # The selections of this result
+        selections = selection_indices.map{|i| row[i]}
+
+        uniq_pivots << pivots unless uniq_pivots.include? pivots
+
+        # Now put all this info into fin
+        fin[grouped_by] = {} unless fin[grouped_by]
+        fin[grouped_by][pivots] = selections
+      end
+
+      # Sort the uniq pivots so the results will be sorted for a human
+      uniq_pivots = uniq_pivots.sort_by{|a| a.map{|x| x[1]}.to_s}
+
+      # Create the rows
+      fin.each do |key, value|
+        row = Row.new
+        @table.rows << row
+
+        pivot_i = 0
+
+        @query.select.columns.each do |col|
+          if @query.group_by && @query.group_by.columns.include?(col)
+            matching_col = key.select{|x| x[0] == col}.first
+            row.c << Cell.new(:v => format_value(matching_col[1]))
+          else
+            uniq_pivots.each do |uniq_pivot|
+              u = value[uniq_pivot]
+              row.c << Cell.new(:v => u ? format_value(u[pivot_i]) : nil)
+            end
+            pivot_i += 1
+          end
+        end
+      end
+
+      uniq_pivots
+    end
+
+    def pivot_cols(uniq_pivots)
+      return unless uniq_pivots.length > 0
+
+      new_cols = []
+      i = 0
+      @query.select.columns.each do |col|
+        id = "c#{i}"
+        label = column_label col
+        type = column_type col
+
+        if @query.group_by && @query.group_by.columns.include?(col)
+          new_cols << Column.new(:id => id, :label => label, :type => type)
+          i += 1
+        else
+          uniq_pivots.each do |uniq_pivot|
+            new_cols << Column.new(:id => "c#{i}", :label => "#{uniq_pivot.map{|x| x[1]}.join ', '} #{label}", :type => type)
+            i += 1
+          end
+        end
+      end
+      @table.cols = new_cols
+    end
+
+    def rows_to_table(rows)
+      @table.rows = rows.map do |grouping, cols|
+        r = Row.new
+        r.c = cols.map do |value|
+          Cell.new :v => format_value(value)
+        end
+        r
       end
     end
 
     def generate_aggregated_rows
-      @rows.each do |grouping, rows|
+      @rows.map do |grouping, rows|
         ag = []
         rows_length = rows.length
         row_i = 0
@@ -162,9 +280,7 @@ module Rgviz
           compute_row_aggregation row, row_i, rows_length, ag
           row_i += 1
         end
-        r = Row.new
-        r.c = ag.map{|v| Cell.new :v => format_value(v)}
-        @table.rows << r
+        [grouping, ag]
       end
     end
 
@@ -471,6 +587,30 @@ module Rgviz
 
       def visit_aggregate_column(node)
         raise "Can't use aggregation functions in group by"
+      end
+    end
+
+    class SimpleOrderedHash
+      def initialize
+        @keys = []
+        @hash = Hash.new
+      end
+
+      def [](key)
+        @hash[key]
+      end
+
+      def []=(key, value)
+        if !@keys.include?(key)
+          @keys << key
+        end
+        @hash[key] = value
+      end
+
+      def each
+        @keys.each do |key|
+          yield key, @hash[key]
+        end
       end
     end
   end

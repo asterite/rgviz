@@ -496,9 +496,7 @@ module Rgviz
       return @hash if @hash
       @hash = 1
       @hash = @hash * 31 + @function.hash
-      @arguments.each do |arg|
-        @hash = @hash * 31 + arg.hash
-      end
+      @hash = @hash * 31 + @argument.hash
       @hash
     end
 
