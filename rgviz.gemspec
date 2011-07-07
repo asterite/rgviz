@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{rgviz}
-  s.version = "0.40"
+  s.version = "0.41"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ary Borenszweig"]
@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
     "lib/rgviz/csv_renderer.rb",
     "lib/rgviz/html_renderer.rb",
     "lib/rgviz/lexer.rb",
+    "lib/rgviz/memory_executor.rb",
     "lib/rgviz/nodes.rb",
     "lib/rgviz/parser.rb",
     "lib/rgviz/token.rb",
