@@ -7,8 +7,8 @@ describe MemoryExecutor do
   Types = [[:id, :number], [:name, :string], [:age, :number], [:birthday, :date]]
 
   def exec(query, rows, options = {})
-    exec = MemoryExecutor.new query, rows, Types
-    exec.execute options
+    exec = MemoryExecutor.new rows, Types
+    exec.execute query, options
   end
 
   def format_datetime(date)

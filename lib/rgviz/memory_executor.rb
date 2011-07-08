@@ -1,7 +1,6 @@
 module Rgviz
   class MemoryExecutor
-    def initialize(query, rows, types)
-      @query = query
+    def initialize(rows, types)
       @rows = rows
       @types = types
       @types_to_indices = {}
@@ -13,7 +12,8 @@ module Rgviz
       @labels = {}
     end
 
-    def execute(options = {})
+    def execute(query, options = {})
+      @query = query
       @query = Parser.parse(@query, options) unless @query.kind_of?(Query)
       @table = Table.new
 
