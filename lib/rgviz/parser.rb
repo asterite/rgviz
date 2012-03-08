@@ -363,15 +363,15 @@ module Rgviz
       when Token::Date
         next_token
         check Token::STRING
-        return value_column(DateColumn.new(Date.parse(@token.string)))
+        return value_column(DateColumn.new(parse_date(@token.string)))
       when Token::DateTime
         next_token
         check Token::STRING
-        return value_column(DateTimeColumn.new(Time.parse(@token.string)))
+        return value_column(DateTimeColumn.new(parse_time(@token.string)))
       when Token::TimeOfDay
         next_token
         check Token::STRING
-        return value_column(TimeOfDayColumn.new(Time.parse(@token.string)))
+        return value_column(TimeOfDayColumn.new(parse_time(@token.string)))
       when Token::Avg, Token::Count, Token::Min, Token::Max, Token::Sum
         function = @token.value
         string = @token.string
@@ -427,6 +427,15 @@ module Rgviz
     def check!(*token_values)
       check *token_values
       next_token
+    end
+    
+  protected
+    def parse_date(date_string)
+      Date.parse(date_string)
+    end
+    
+    def parse_time(time_string)
+      Time.parse(time_string)
     end
   end
 end
