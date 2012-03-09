@@ -80,3 +80,7 @@ Their source code is {here}[https://github.com/asterite/rgviz/blob/master/lib/rg
 === Output Formatters
 
 You can use <tt>Rgviz::HtmlRenderer.render(table)</tt> and <tt>Rgviz::CsvRenderer.render(table)</tt> to get a string to render in html or csv output format.
+
+=== Contributors
+
+* {Brad Seefeld}[https://github.com/bradseefeld]
