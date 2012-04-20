@@ -38,7 +38,7 @@ module Rgviz
         end
       end
       str << "where #{where} " if where
-      str << "group_by #{group_by} " if group_by
+      str << "group by #{group_by} " if group_by
       str << "pivot #{pivot} " if pivot
       str << "order by #{order_by} " if order_by
       str << "limit #{limit} " if limit
