@@ -1,5 +1,7 @@
 == Rgviz
 
+{Build Status}[https://secure.travis-ci.org/asterite/rgviz.png]
+
 This library implements the {query language}[http://code.google.com/apis/visualization/documentation/querylanguage.html] for the {Google Visualization API}[http://code.google.com/apis/visualization/documentation/dev/implementing_data_source.html] wire protocol.
 
 It can generate an AST of the query from a string. The AST nodes implement the {Visitor Pattern}[http://en.wikipedia.org/wiki/Visitor_pattern] so you can easily work with it.
