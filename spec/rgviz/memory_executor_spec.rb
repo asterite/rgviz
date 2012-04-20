@@ -19,8 +19,8 @@ describe MemoryExecutor do
     date.strftime "%Y-%m-%d"
   end
 
-  def self.it_processes_single_select_column(query, id, type, value, label, options = {})
-    it "processes select #{query}" do
+  def self.it_processes_single_select_column(query, id, type, value, label, options = {}, test_options = {})
+    it "processes select #{query}", test_options do
       if block_given?
         rows = yield
       else

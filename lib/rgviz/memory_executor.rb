@@ -471,7 +471,8 @@ module Rgviz
           when Integer
             seconds = @value / 1000
             millis = @value % 1000
-            @value = Time.at seconds, millis
+            @value = Time.utc 1970, 1, 1, 0, 0, 0
+            @value += seconds + millis / 1000.0
             @value = Date.civil @value.year, @value.month, @value.day
           end
         end
