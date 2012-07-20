@@ -422,6 +422,8 @@ module Rgviz
     Product = Token::STAR
     Quarter = Token::Quarter
     Quotient = Token::SLASH
+    Round = Token::Round
+    Floor = Token::Floor
     Second = Token::Second
     Sum = Token::PLUS
     ToDate = Token::ToDate

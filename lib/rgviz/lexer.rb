@@ -61,6 +61,7 @@ module Rgviz
           elsif scan /desc\b/i then Token::Desc
           elsif scan /ends\b/i then Token::Ends
           elsif scan /false\b/i then Token::False
+          elsif @extensions and scan /floor\b/i then Token::Floor
           elsif scan /format\b/i then Token::Format
           elsif scan /group\b/i then Token::Group
           elsif scan /hour\b/i then Token::Hour
@@ -86,6 +87,7 @@ module Rgviz
           elsif scan /order\b/i then Token::Order
           elsif scan /pivot\b/i then Token::Pivot
           elsif scan /quarter\b/i then Token::Quarter
+          elsif @extensions and scan /round\b/i then Token::Round
           elsif scan /second\b/i then Token::Second
           elsif scan /select\b/i then Token::Select
           elsif scan /starts\b/i then Token::Starts

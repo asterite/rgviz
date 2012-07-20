@@ -9,14 +9,14 @@ describe Lexer do
       tok = lex.next_token
       tok.value.should == token_value
     end
-    
+
     it "lexes #{str} upcase" do
       lex = Lexer.new str.upcase, options
       tok = lex.next_token
       tok.value.should == token_value
     end
   end
-  
+
   def self.it_lexes_id(str, id = str)
     it "lexes identifier #{str}" do
       lex = Lexer.new str
@@ -25,7 +25,7 @@ describe Lexer do
       tok.string.should == id
     end
   end
-  
+
   def self.it_lexes_string(str, id = str)
     it "lexes string #{str}" do
       lex = Lexer.new str
@@ -34,7 +34,7 @@ describe Lexer do
       tok.string.should == id
     end
   end
-  
+
   def self.it_lexes_token(str, token_value)
     it "lexes #{str}" do
       lex = Lexer.new str
@@ -42,7 +42,7 @@ describe Lexer do
       tok.value.should == token_value
     end
   end
-  
+
   def self.it_lexes_integer(str, number)
     it "lexes #{str}" do
       lex = Lexer.new str
@@ -51,7 +51,7 @@ describe Lexer do
       tok.number.should == number
     end
   end
-  
+
   def self.it_lexes_decimal(str, number)
     it "lexes #{str}" do
       lex = Lexer.new str
@@ -60,7 +60,7 @@ describe Lexer do
       tok.number.should == number
     end
   end
-  
+
   def self.it_lexes_eof(str)
     it "lexes eof #{str}" do
       lex = Lexer.new str
@@ -68,7 +68,7 @@ describe Lexer do
       tok.value.should == Token::EOF
     end
   end
-  
+
   def self.it_lexes_error(str)
     it "lexes error #{str}" do
       lex = Lexer.new "x#{str}"
@@ -78,7 +78,7 @@ describe Lexer do
       lambda { lex.next_token }.should raise_error(ParseException)
     end
   end
-  
+
   it_lexes_keyword 'and', Token::And
   it_lexes_keyword 'asc', Token::Asc
   it_lexes_keyword 'avg', Token::Avg
@@ -130,7 +130,7 @@ describe Lexer do
   it_lexes_keyword 'where', Token::Where
   it_lexes_keyword 'with', Token::With
   it_lexes_keyword 'year', Token::Year
-  
+
   it_lexes_id 'selected'
   it_lexes_id '  selected  ', 'selected'
   it_lexes_id '`selected`', 'selected'
@@ -139,12 +139,12 @@ describe Lexer do
   it_lexes_id 'hello_123_bye'
   it_lexes_string "'hello world'", "hello world"
   it_lexes_string '"hello world"', "hello world"
-  
+
   it_lexes_token '+', Token::PLUS
   it_lexes_token '-', Token::MINUS
   it_lexes_token '*', Token::STAR
   it_lexes_token '/', Token::SLASH
-  
+
   it_lexes_token ',', Token::COMMA
   it_lexes_token '(', Token::LPAREN
   it_lexes_token ')', Token::RPAREN
@@ -155,20 +155,24 @@ describe Lexer do
   it_lexes_token '>=', Token::GTE
   it_lexes_token '!=', Token::NEQ
   it_lexes_token '<>', Token::NEQ
-  
+
   it_lexes_integer '1', 1
   it_lexes_integer '0123', 123
   it_lexes_integer '45678791230', 45678791230
   it_lexes_decimal '123.456', 123.456
   it_lexes_decimal '.456', 0.456
-  
+
   it_lexes_eof ''
   it_lexes_eof "   \t\n\r"
-  
+
   it_lexes_error '!'
   it_lexes_error '?'
   it_lexes_error ':'
-  
+
   it_lexes_id 'concat'
+  it_lexes_id 'round'
+  it_lexes_id 'floor'
   it_lexes_keyword 'concat', Token::Concat, :extensions => true
+  it_lexes_keyword 'round', Token::Round, :extensions => true
+  it_lexes_keyword 'floor', Token::Floor, :extensions => true
 end

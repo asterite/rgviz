@@ -95,6 +95,10 @@ describe MemoryExecutor do
   it_processes_single_select_column "minute(datetime '2010-01-02 10:11:12')", 'c0', :number, 11, "minute(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "second(datetime '2010-01-02 10:11:12')", 'c0', :number, 12, "second(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "quarter(datetime '2010-04-02 10:11:12')", 'c0', :number, 2, "quarter(datetime '2010-04-02 10:11:12')"
+  it_processes_single_select_column "round(1.2)", 'c0', :number, 1, "round(1.2)", :extensions => true
+  it_processes_single_select_column "round(1.9)", 'c0', :number, 2, "round(1.9)", :extensions => true
+  it_processes_single_select_column "floor(1.2)", 'c0', :number, 1, "floor(1.2)", :extensions => true
+  it_processes_single_select_column "floor(1.9)", 'c0', :number, 1, "floor(1.9)", :extensions => true
   it_processes_single_select_column "lower('FOO')", 'c0', :string, 'foo', "lower('FOO')"
   it_processes_single_select_column "upper('foo')", 'c0', :string, 'FOO', "upper('foo')"
   it_processes_single_select_column "toDate(date '2010-10-12')", 'c0', :date, '2010-10-12', "toDate(date '2010-10-12')"

@@ -16,6 +16,7 @@ module Rgviz
     DayOfWeek = :dayOfWeek
     Ends = :ends
     False = :false
+    Floor = :floor
     Format = :format
     Group = :group
     Hour = :hour
@@ -41,6 +42,7 @@ module Rgviz
     Order = :order
     Pivot = :pivot
     Quarter = :quarter
+    Round = :round
     Second = :second
     Select = :select
     Starts = :starts
@@ -53,17 +55,17 @@ module Rgviz
     Where = :where
     With = :with
     Year = :year
-    
+
     ID = :ID
     INTEGER = :INTEGER
     DECIMAL = :DECIMAL
     STRING = :STRING
-    
+
     PLUS = :'+'
     MINUS = :'-'
     STAR = :'*'
     SLASH = :'/'
-    
+
     COMMA = :','
     LPAREN = :'('
     RPAREN = :')'
@@ -73,9 +75,9 @@ module Rgviz
     GT = :'>'
     GTE = :'>='
     NEQ = :'!='
-    
+
     EOF = :'<EOF>'
-    
+
     attr_accessor :start
     attr_accessor :value
     attr_accessor :string
