@@ -40,6 +40,8 @@ Extensions
 Rgviz supports the following extra functions:
 
 * *concat*: converts each of its arguments to a string and then concatenates them. For example: <tt>concat(1, '-', '2')</tt> returns <tt>'1-2'</tt>. Can also receive just a single argument to convert it to a string.
+* *floor*
+* *round*
 
 These new functions are not part of Google's query language, but they are very handy so we added them. These functions are also supported by [rgviz-rails](https://github.com/asterite/rgviz-rails).
 

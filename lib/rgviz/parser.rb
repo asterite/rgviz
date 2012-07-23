@@ -386,7 +386,8 @@ module Rgviz
       when Token::Year, Token::Month, Token::Day,
            Token::Hour, Token::Minute, Token::Second, Token::Millisecond,
            Token::Now, Token::DateDiff, Token::Lower, Token::Upper,
-           Token::Quarter, Token::DayOfWeek, Token::ToDate, Token::Concat
+           Token::Quarter, Token::DayOfWeek, Token::ToDate, Token::Concat,
+           Token::Round,Token::Floor
         function = @token.value
         string = @token.string
         next_token
@@ -428,12 +429,12 @@ module Rgviz
       check *token_values
       next_token
     end
-    
+
   protected
     def parse_date(date_string)
       Date.parse(date_string)
     end
-    
+
     def parse_time(time_string)
       Time.parse(time_string)
     end

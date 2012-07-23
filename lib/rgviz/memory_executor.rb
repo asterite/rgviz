@@ -454,6 +454,10 @@ module Rgviz
           @value = val1.sec
         when ScalarFunctionColumn::Quarter
           @value = (val1.month / 3.0).ceil
+        when ScalarFunctionColumn::Round
+          @value = val1.round
+        when ScalarFunctionColumn::Floor
+          @value = val1.floor
         when ScalarFunctionColumn::Millisecond
           raise "Millisecond is not implemented"
         when ScalarFunctionColumn::Lower
