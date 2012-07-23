@@ -3,15 +3,15 @@ require 'rgviz'
 include Rgviz
 
 describe Lexer do
-  def self.it_lexes_keyword(str, token_value, options = {})
+  def self.it_lexes_keyword(str, token_value)
     it "lexes #{str}" do
-      lex = Lexer.new str, options
+      lex = Lexer.new str
       tok = lex.next_token
       tok.value.should == token_value
     end
     
     it "lexes #{str} upcase" do
-      lex = Lexer.new str.upcase, options
+      lex = Lexer.new str.upcase
       tok = lex.next_token
       tok.value.should == token_value
     end
@@ -169,6 +169,5 @@ describe Lexer do
   it_lexes_error '?'
   it_lexes_error ':'
   
-  it_lexes_id 'concat'
-  it_lexes_keyword 'concat', Token::Concat, :extensions => true
+  it_lexes_keyword 'concat', Token::Concat
 end

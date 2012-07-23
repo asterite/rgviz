@@ -3,12 +3,12 @@ require 'rgviz'
 include Rgviz
 
 describe Parser do
-  def parse(string, options = {})
-    Parser.parse(string, options)
+  def parse(string)
+    Parser.parse(string)
   end
   
-  def parse_select_single_column(string, options = {})
-    query = parse "select #{string}", options
+  def parse_select_single_column(string)
+    query = parse "select #{string}"
     select = query.select
     select.columns.length.should == 1
     
@@ -200,10 +200,10 @@ describe Parser do
     ['quarter', ScalarFunctionColumn::Quarter],
     ['dayofweek', ScalarFunctionColumn::DayOfWeek],
     ['todate', ScalarFunctionColumn::ToDate],
-    ['concat', ScalarFunctionColumn::Concat, true],
-  ].each do |str, function, extensions|
+    ['concat', ScalarFunctionColumn::Concat],
+  ].each do |str, function|
     it "parses #{str} function" do
-      col = parse_select_single_column "#{str}(col)", :extensions => extensions
+      col = parse_select_single_column "#{str}(col)"
       col.should be_a_kind_of ScalarFunctionColumn
       col.function.should == function
       

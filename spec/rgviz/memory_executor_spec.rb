@@ -6,9 +6,9 @@ describe MemoryExecutor do
 
   Types = [[:id, :number], [:name, :string], [:age, :number], [:birthday, :date]]
 
-  def exec(query, rows, options = {})
+  def exec(query, rows)
     exec = MemoryExecutor.new rows, Types
-    exec.execute query, options
+    exec.execute query
   end
 
   def format_datetime(date)
@@ -19,7 +19,7 @@ describe MemoryExecutor do
     date.strftime "%Y-%m-%d"
   end
 
-  def self.it_processes_single_select_column(query, id, type, value, label, options = {}, test_options = {})
+  def self.it_processes_single_select_column(query, id, type, value, label, test_options = {})
     it "processes select #{query}", test_options do
       if block_given?
         rows = yield
@@ -27,7 +27,7 @@ describe MemoryExecutor do
         rows = [[1, 'Foo', 20, Date.today]]
       end
 
-      table = exec "select #{query}", rows, options
+      table = exec "select #{query}", rows
       table.cols.length.should == 1
 
       table.cols[0].id.should == id
@@ -85,7 +85,7 @@ describe MemoryExecutor do
   it_processes_single_select_column '3 * age', 'c0', :number, 60, '3 * age' do
     [[1, 'Foo', 20, Date.today]]
   end
-  it_processes_single_select_column "concat('foo', 'bar')", 'c0', :string, 'foobar', "concat('foo', 'bar')", :extensions => true
+  it_processes_single_select_column "concat('foo', 'bar')", 'c0', :string, 'foobar', "concat('foo', 'bar')"
   it_processes_single_select_column "datediff(date '2010-10-12', date '2010-10-01')", 'c0', :number, 11, "dateDiff(date '2010-10-12', date '2010-10-01')"
   it_processes_single_select_column "year(datetime '2010-01-02 10:11:12')", 'c0', :number, 2010, "year(datetime '2010-01-02 10:11:12')"
   it_processes_single_select_column "month(datetime '2010-01-02 10:11:12')", 'c0', :number, 1, "month(datetime '2010-01-02 10:11:12')"

@@ -2,10 +2,9 @@ require 'strscan'
 
 module Rgviz
   class Lexer < StringScanner
-    def initialize(str, options = {})
+    def initialize(str)
       super
       @token = Token.new
-      @extensions = options[:extensions]
     end
 
     def next_token
@@ -50,7 +49,7 @@ module Rgviz
           elsif scan /asc\b/i then Token::Asc
           elsif scan /avg\b/i then Token::Avg
           elsif scan /by\b/i then Token::By
-          elsif @extensions and scan /concat\b/i then Token::Concat
+          elsif scan /concat\b/i then Token::Concat
           elsif scan /contains\b/i then Token::Contains
           elsif scan /count\b/i then Token::Count
           elsif scan /date\b/i then Token::Date

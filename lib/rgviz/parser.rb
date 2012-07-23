@@ -3,14 +3,14 @@ require 'date'
 
 module Rgviz
   class Parser < Lexer
-    def initialize(string, options = {})
+    def initialize(string)
       super
       @query = Query.new
       next_token
     end
 
-    def self.parse(string, options = {})
-      Parser.new(string, options).parse
+    def self.parse(string)
+      Parser.new(string).parse
     end
 
     def parse

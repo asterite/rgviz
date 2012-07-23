@@ -37,13 +37,9 @@ Read the [source code for the AST nodes](https://github.com/asterite/rgviz/blob/
 Extensions
 ----------
 
-If you pass <tt>:extensions => true</tt> to the parse method these new scalar functions will be available:
+Rgviz supports the following extra functions:
 
 * *concat*: converts each of its arguments to a string and then concatenates them. For example: <tt>concat(1, '-', '2')</tt> returns <tt>'1-2'</tt>. Can also receive just a single argument to convert it to a string.
-
-So to have this function parsed you need to do:
-
-    query = Rgviz::Parser.parse 'select concat(name, age)', :extensions => true
 
 These new functions are not part of Google's query language, but they are very handy so we added them. These functions are also supported by [rgviz-rails](https://github.com/asterite/rgviz-rails).
 

@@ -12,9 +12,9 @@ module Rgviz
       @labels = {}
     end
 
-    def execute(query, options = {})
+    def execute(query)
       @query = query
-      @query = Parser.parse(@query, options) unless @query.kind_of?(Query)
+      @query = Parser.parse(@query) unless @query.kind_of?(Query)
       @table = Table.new
 
       process_labels
