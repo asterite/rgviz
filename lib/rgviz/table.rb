@@ -34,8 +34,10 @@ module Rgviz
   class Row
     attr_accessor :c
 
-    def initialize
-      @c = []
+    def initialize(attributes = {})
+      attributes.each do |key, value|
+        self.send "#{key}=", value
+      end
     end
   end
 
