@@ -35,8 +35,12 @@ module Rgviz
     attr_accessor :c
 
     def initialize(attributes = {})
-      attributes.each do |key, value|
-        self.send "#{key}=", value
+      if attributes.empty?
+        @c = []
+      else
+        attributes.each do |key, value|
+          self.send "#{key}=", value
+        end
       end
     end
   end
