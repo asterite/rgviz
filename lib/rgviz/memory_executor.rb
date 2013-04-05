@@ -12,7 +12,7 @@ module Rgviz
       @labels = {}
     end
 
-    def execute(query)
+    def execute(query, options = {})
       @query = query
       @query = Parser.parse(@query) unless @query.kind_of?(Query)
       @table = Table.new
