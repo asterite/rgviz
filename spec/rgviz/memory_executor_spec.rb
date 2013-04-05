@@ -552,4 +552,9 @@ describe MemoryExecutor do
       i += 1
     end
   end
+
+  it "accepts options" do
+    exec = MemoryExecutor.new [], Types
+    exec.execute "select *", {}
+  end
 end
