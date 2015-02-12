@@ -22,6 +22,7 @@ module Rgviz
     attr_accessor :label
     attr_accessor :type
     attr_accessor :pattern
+    attr_accessor :role
     attr_accessor :p
 
     def initialize(attributes = {})
